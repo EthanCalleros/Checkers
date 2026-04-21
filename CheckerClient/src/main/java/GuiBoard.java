@@ -26,6 +26,7 @@ public class GuiBoard{
 	Button send;
 	HashMap<String, Scene> sceneMap;
 	VBox chatBox;
+	Button forfeit;
 	
 	boolean isRed;
 	int[][] boardState;
@@ -205,6 +206,7 @@ public class GuiBoard{
 	    chatMsg = new TextField();
 	    chatMsg.setPromptText("Enter message...");
 	    send = new Button("Send");
+	    forfeit = new Button("Forfeit");
 
 	    send.setOnAction(e -> {
 	        if (!chatMsg.getText().isEmpty()) {

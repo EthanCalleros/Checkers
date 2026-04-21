@@ -40,6 +40,7 @@ public class GuiClient extends Application{
 	GuiStart startScreen;
 	GuiSignUp signupScreen;
 	GuiLogin loginScreen;
+	GuiBoard boardScreen;
 	GuiMainScreen mainScreen;
 	
 	public static void main(String[] args) {
@@ -65,18 +66,24 @@ public class GuiClient extends Application{
 						signupScreen.user.clear();
 						signupScreen.error.setText("Invalid username/password please input a different username and/or password");
 					} else if (msg.getType() == Message.messageType.username_free && msg.getType2() == Message.messageType.ok_password){
-						primaryStage.setScene(sceneMap.get("client"));
-						username = loginScreen.username;
-						primaryStage.setTitle("Client: " + username);
+						primaryStage.setScene(sceneMap.get("main"));
+						username = signupScreen.username;
+						primaryStage.setTitle("Welcome: " + username);
 					} else if (msg.getType() == Message.messageType.user_dne || msg.getType() == Message.messageType.incorrect_password) {
 						loginScreen.username = "";
 						loginScreen.passwordField.clear();
 						loginScreen.user.clear();
 						loginScreen.error.setText("Invalid username/password please input a different username and/or password");
 					} else if (msg.getType() == Message.messageType.correct_password && msg.getType2() == Message.messageType.user_exists) {
-						
+						username = loginScreen.username;
+						primaryStage.setScene(sceneMap.get("main"));
+						primaryStage.setTitle("Welcome: " + username);
 					} else if (msg.getType() == Message.messageType.board) {
-						
+						if (msg.getType2() == Message.messageType.game_start) { 
+							
+						} else if (msg.getType2() == Message.messageType.game_move) {
+							
+						}
 					} else if (msg.getType() == Message.messageType.new_users) {
 						observer.clear();
 						observer.add("All");
@@ -116,11 +123,14 @@ public class GuiClient extends Application{
 		
 		startScreen = new GuiStart(primaryStage, sceneMap);
 		loginScreen = new GuiLogin(clientConnection, primaryStage, sceneMap, id);
+		signupScreen= new GuiSignUp(clientConnection, primaryStage, sceneMap, id);
+		boardScreen = new GuiBoard(clientConnection, false);
 		
 		sceneMap.put("start", startScreen.createGuiStart());
 		sceneMap.put("login", loginScreen.createGuiLogin());
 		sceneMap.put("signup", signupScreen.createGuiSignup());
-		sceneMap.put("client",  createClientGui());
+		sceneMap.put("board", boardScreen.createGuiBoard());
+		sceneMap.put("main",  createClientGui());
 		
 		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override

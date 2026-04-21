@@ -99,7 +99,7 @@ public class Server{
 				 while(true) {
 					    try {
 					    	Message msg = (Message)in.readObject();
-					    	boolean taken = false;
+
 					    	if (msg.getType() == Message.messageType.login) {
 					    		String user = msg.getMessage();
 					    		String password = msg.getMessage2();
@@ -115,6 +115,13 @@ public class Server{
 					    			out.writeObject(userDne);
 					    			out.reset();
 					    			callback.accept("client #" + count + " User Does Not Exist");
+					    		} else if (accounts.containsKey(user) && accounts.get(user).equals(password)) {
+					    		    username = user;
+					    		    Message success = new Message(Message.messageType.correct_password, count);
+					    		    out.writeObject(success);
+					    		    out.reset();
+					    		    callback.accept("client #" + count + " logged in as " + username);
+					    		    sendUserList();
 					    		}
 					    	} else if (msg.getType() == Message.messageType.signup) {
 					    		String user = msg.getMessage();
@@ -123,7 +130,7 @@ public class Server{
 					    		String specialChars = "[!@#$%^&*()_+-=[]{}|;:',.<>/?]";
 					    		String nums = "[0-9]";
 					    		
-					    		if (password.matches(specialChars) == false || password.matches(nums) == false){
+					    		if (!password.matches(".*" + specialChars + ".*") || !password.matches(".*" + nums + ".*")){
 					    			Message badPassword = new Message(Message.messageType.bad_password, count);
 					    			out.writeObject(badPassword);
 					    			out.reset();
@@ -145,6 +152,13 @@ public class Server{
 					    	} else if (msg.getType() == Message.messageType.game_start) {
 					    		
 					    	} else if (msg.getType() == Message.messageType.game_move) {
+					    		int fromRow, toRow, fromCol, toCol;
+					    		
+					    		fromRow = msg.getFromRow();
+					    		toRow = msg.getToRow();
+					    		fromCol = msg.getFromCol();
+					    		toCol = msg.getToCol();
+					    		
 					    		
 					    	} else if (msg.getType() == Message.messageType.group_message) {
 					    		callback.accept(username + " to All: " + msg.getMessage());

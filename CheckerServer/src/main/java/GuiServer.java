@@ -1,6 +1,5 @@
 
 import java.util.HashMap;
-import java.util.Set;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -25,20 +24,26 @@ public class GuiServer extends Application{
 	ListView<String> listItems;
 	
 	
-	public static void main(String[] args) {
-		launch(args);
-	}
+	
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		serverConnection = new Server(data -> {
+			Platform.runLater(()->{
+				try {
+					Message msg = (Message) data;
+					if (msg.type == 1) listItems.getItems().add("LOG: " + msg.sender + " joined.");
+					else if (msg.type == 2) listItems.getItems().add(msg.sender + ": " + msg.messageText);
+				} catch (Exception e) {
+					listItems.getItems().add("Data: " + data.toString());
+				}
+			});
+		});
+
+		
 		listItems = new ListView<String>();
 
 		sceneMap = new HashMap<String, Scene>();
-		serverConnection = new Server(data -> {
-		    Platform.runLater(() -> {
-		        listItems.getItems().add((String) data);
-		    });
-		});
 		
 		sceneMap.put("server",  createServerGui());
 		

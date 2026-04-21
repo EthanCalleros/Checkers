@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 
 public class Client extends Thread{
+	public String userName;
 
 	
 	Socket socketClient;
@@ -38,7 +39,9 @@ public class Client extends Thread{
 			Message message = (Message) in.readObject();
 			callback.accept(message);
 			}
-			catch(Exception e) {}
+			catch(Exception e) {
+				break;
+			}
 		}
 	
     }
@@ -47,6 +50,7 @@ public class Client extends Thread{
 		
 		try {
 			out.writeObject(data);
+			out.reset();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

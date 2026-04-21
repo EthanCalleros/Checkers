@@ -7,7 +7,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -17,45 +16,57 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-public class GuiLogin{
+public class GuiLogin extends Application{
 	
-	String username;
-	int id;
 	TextField user;
 	TextField password;
-	Label error;
 	Button enter;
 	VBox loginBox;
 	Client clientConnection;
-	Stage primaryStage;
 	HashMap<String, Scene> sceneMap;
 	
-	public GuiLogin(Client connection, Stage primaryStage, HashMap<String, Scene> sceneMap, int id) {
-		this.clientConnection = connection;
-		this.primaryStage = primaryStage;
-		this.sceneMap = sceneMap;
-		this.id = id;
+	public static void main(String[] args) {
+		launch(args);
+	}
+	
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		// TODO Auto-generated method stub
+		clientConnection = new Client(data-> {
+			Message msg = (Message) data;
+			
+			
+		});
+		
+		clientConnection.start();
+		
+		user = new TextField();
+		user.setPromptText("Enter Username");
+		password = new TextField();
+		password.setPromptText("Enter Password: password will be invisible");
+		password.setStyle("-fx-text-fill: white;");
+		enter = new Button("Enter");
+		
+		sceneMap = new HashMap<String, Scene>();
+
+		sceneMap.put("Login",  createGuiLogin());
+		
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent t) {
+                Platform.exit();
+                System.exit(0);
+            }
+        });
+
+
+		primaryStage.setScene(sceneMap.get("Login"));
+		primaryStage.setTitle("Login");
+		primaryStage.show();
 	}
 	
 	public Scene createGuiLogin() {
-		enter = new Button("Join");
-		password = new TextField();
-		user = new TextField();
-		error = new Label();
-		loginBox = new VBox(10, user, password, enter, error);
-		
-		enter.setOnAction(e->{
-			
-			if (username == null || username.isEmpty()) {
-				username = user.getText();
-				user.clear();
-				Message sendName = new Message(Message.messageType.username, id);
-				sendName.setMessage(username);
-				clientConnection.send(sendName);
-			}
-		});
-		
-		password.setStyle("-fx-text-fill: white");
+		loginBox = new VBox(10, user, password, enter);
 		loginBox.setAlignment(Pos.TOP_CENTER);
 		loginBox.setStyle("-fx-background-color: blue" + "-fx-font-family: 'serif';");
 		return new Scene(loginBox, 400, 300);

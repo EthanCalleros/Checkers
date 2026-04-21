@@ -1,10 +1,17 @@
 import java.util.HashMap;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
@@ -13,9 +20,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
 public class GuiBoard{
 	
+	int id;
 	String username;
 	String opponent;
 	BorderPane root;
@@ -27,6 +36,9 @@ public class GuiBoard{
 	HashMap<String, Scene> sceneMap;
 	VBox chatBox;
 	Button forfeit;
+	ObservableList<String> observer;
+	ComboBox<String> options;
+	Stage primaryStage;
 	
 	boolean isRed;
 	int[][] boardState;
@@ -38,15 +50,109 @@ public class GuiBoard{
 	
 	Client connection;
 	
-	public GuiBoard(Client clientConnection, boolean isRed) {
+	public GuiBoard(Client clientConnection, Stage primaryStage, HashMap<String, Scene> sceneMap, boolean isRed, int id) {
 		root = new BorderPane();
 		board = new BorderPane();
 		checkerBoard = new GridPane();
 		boardState = new int[8][8];
 		squares = new StackPane[8][8];
+		observer = FXCollections.observableArrayList();
+		observer.add("All");
+		this.sceneMap = sceneMap;
 		this.connection = clientConnection;
+		this.primaryStage = primaryStage;
 		this.isRed = isRed;
+		this.id = id;
 	}
+	
+	 private void checkGameState() {
+	        int redPieces = 0;
+	        int blackPieces = 0;
+	        boolean redCanMove = false;
+	        boolean blackCanMove = false;
+
+	        for (int row = 0; row < 8; row++) {
+	            for (int col = 0; col < 8; col++) {
+	                int piece = boardState[row][col];
+	                if (piece == 1 || piece == 3) {
+	                    redPieces++;
+	                    if (!redCanMove) redCanMove = hasAnyValidMoves(row, col);
+	                } else if (piece == 2 || piece == 4) {
+	                    blackPieces++;
+	                    if (!blackCanMove) blackCanMove = hasAnyValidMoves(row, col);
+	                }
+	            }
+	        }
+
+	        if (redPieces == 0 || (redTurn && !redCanMove)) {
+	            showEndGameDialog("Black Wins!");
+	        } else if (blackPieces == 0 || (!redTurn && !blackCanMove)) {
+	            showEndGameDialog("Red Wins!");
+	        } else if (!redCanMove && !blackCanMove) {
+	            showEndGameDialog("It's a Draw!");
+	        }
+	    }
+
+	    private boolean hasAnyValidMoves(int r, int c) {
+	        int[] directions = {-2, -1, 1, 2};
+	        for (int rd : directions) {
+	            for (int cd : directions) {
+	                int targetR = r + rd;
+	                int targetC = c + cd;
+	                if (targetR >= 0 && targetR < 8 && targetC >= 0 && targetC < 8) {
+	                    if (isValidMove(r, c, targetR, targetC)) return true;
+	                }
+	            }
+	        }
+	        return false;
+	    }
+
+	    public void showEndGameDialog(String result) {
+	        Platform.runLater(() -> {
+	        	Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+	            alert.setTitle("Game Over");
+	            alert.setHeaderText(result);
+	            alert.setContentText("Would you like to play again or quit?");
+
+	            ButtonType playAgainBtn = new ButtonType("Play Again");
+	            ButtonType quitBtn = new ButtonType("Quit");
+	            alert.getButtonTypes().setAll(playAgainBtn, quitBtn);
+
+	            // Send win/lose to server based on result
+	            if (result.contains("Red Wins")) {
+	                Message msg = new Message(
+	                    isRed ? Message.messageType.game_win : Message.messageType.game_lose, 0
+	                );
+	                msg.setSender(username);
+	                connection.send(msg);
+	            } else if (result.contains("Black Wins")) {
+	                Message msg = new Message(
+	                    !isRed ? Message.messageType.game_win : Message.messageType.game_lose, 0
+	                );
+	                msg.setSender(username);
+	                connection.send(msg);
+	            }
+
+	            alert.showAndWait().ifPresent(response -> {
+	                if (response == playAgainBtn) {
+	                    resetGame();
+	                } else {
+	                    // Notify server player quit
+	                    Message msg = new Message(Message.messageType.user_left, 0);
+	                    msg.setSender(username);
+	                    connection.send(msg);
+	                    primaryStage.setScene(sceneMap.get("main"));
+	                }
+	            });
+	        });
+	    }
+
+	    private void resetGame() {
+	        boardState = new int[8][8];
+	        boardInit();
+	        redTurn = true;
+	        visualBoard();
+	    }
 	
 	private void boardInit() {
 		for (int row = 0; row < 8; row++) {
@@ -112,7 +218,7 @@ public class GuiBoard{
         } else {
         	if (isValidMove(selectedRow, selectedCol, row, col)) {
 
-                Message msg = new Message(Message.messageType.game_move, 0);
+                Message msg = new Message(Message.messageType.game_move, id);
                 msg.setMove(selectedRow, selectedCol, row, col);
                 connection.send(msg);
 
@@ -141,6 +247,7 @@ public class GuiBoard{
         if (piece == 2 && toRow == 0) boardState[toRow][toCol] = 4;
 
         visualBoard();
+        checkGameState();
     }
 	
 	private void visualBoard() {
@@ -207,18 +314,32 @@ public class GuiBoard{
 	    chatMsg.setPromptText("Enter message...");
 	    send = new Button("Send");
 	    forfeit = new Button("Forfeit");
+	    options = new ComboBox<String>(observer);
+		options.setValue("All");
 
 	    send.setOnAction(e -> {
-	        if (!chatMsg.getText().isEmpty()) {
-	            Message msg = new Message(Message.messageType.group_message, 0);
-	            msg.setMessage(username + ": " + chatMsg.getText());
-	            msg.setReceiver("All");
-	            connection.send(msg);
-	            chatMsg.clear();
-	        }
+				if (options.getValue().isEmpty() || options.getValue().equals("All")) {
+					Message send = new Message(Message.messageType.group_message, id);
+					send.setMessage(chatMsg.getText());
+					send.setReceiver("All");
+					connection.send(send); 
+					chatMsg.clear();
+				} else {
+					Message send = new Message(Message.messageType.direct_message, id);
+					send.setMessage(chatMsg.getText());
+					send.setReceiver(options.getValue());
+					connection.send(send);
+					chatMsg.clear();
+				}
+				
 	    });
+	    
+        forfeit.setOnAction(e -> {
+            primaryStage.setScene(sceneMap.get("main"));
+        });
 
-	    chatBox = new VBox(10, chat, chatMsg, send);
+
+	    chatBox = new VBox(10, options, chat, chatMsg, send, forfeit);
 	    chatBox.setPrefWidth(200);
 	    root.setRight(chatBox);
 

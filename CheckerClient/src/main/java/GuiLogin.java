@@ -2,11 +2,14 @@ import java.util.HashMap;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -29,6 +32,8 @@ public class GuiLogin{
 	Client clientConnection;
 	Stage primaryStage;
 	HashMap<String, Scene> sceneMap;
+	ObservableList<String> observer;
+	ComboBox<String> options;
 	
 	public GuiLogin(Client connection, Stage primaryStage, HashMap<String, Scene> sceneMap, int id) {
 		this.clientConnection = connection;
@@ -43,6 +48,8 @@ public class GuiLogin{
 		user = new TextField();
 		error = new Label();
 		loginBox = new VBox(10, user, passwordField, enter, error);
+		observer = FXCollections.observableArrayList();
+		observer.add("All");
 		
 		enter.setOnAction(e->{
 			
@@ -50,6 +57,7 @@ public class GuiLogin{
 				username = user.getText();
 				String password = passwordField.getText();
 				user.clear();
+				passwordField.clear();
 				Message sendName = new Message(Message.messageType.login, id);
 				sendName.setMessage(username);
 				sendName.setMessage2(password);
@@ -57,9 +65,12 @@ public class GuiLogin{
 			}
 		});
 		
-		passwordField.setStyle("-fx-text-fill: white");
+		user.setPromptText("Enter username");
+		passwordField.setPromptText("Enter Password");
+		
+		//passwordField.setStyle("-fx-text-fill: white");
 		loginBox.setAlignment(Pos.TOP_CENTER);
-		loginBox.setStyle("-fx-background-color: blue" + "-fx-font-family: 'serif';");
+		loginBox.setStyle("-fx-background-color: blue;"+"-fx-font-family: 'serif';");
 		return new Scene(loginBox, 400, 300);
 	}
 	

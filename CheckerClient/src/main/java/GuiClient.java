@@ -26,16 +26,12 @@ public class GuiClient extends Application{
 	
 	static String username;
 	int id;
-	ObservableList<String> observer;
-	ComboBox<String> options;
 	short[][] board;
 	TextField c1;
 	Button b1;
 	HashMap<String, Scene> sceneMap;
 	VBox clientBox;
 	Client clientConnection;
-	
-	ListView<String> listItems2;
 	
 	GuiStart startScreen;
 	GuiSignUp signupScreen;
@@ -49,11 +45,6 @@ public class GuiClient extends Application{
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		listItems2 = new ListView<String>();
-		
-		observer = FXCollections.observableArrayList();
-		
-		observer.add("All");
 		
 		clientConnection = new Client(data->{
 				Platform.runLater(()->{
@@ -79,58 +70,51 @@ public class GuiClient extends Application{
 						primaryStage.setScene(sceneMap.get("main"));
 						primaryStage.setTitle("Welcome: " + username);
 					} else if (msg.getType() == Message.messageType.board) {
-						if (msg.getType2() == Message.messageType.game_start) { 
-							
+						if (msg.getType2() == Message.messageType.game_start) {
+							boardScreen = new GuiBoard(clientConnection, primaryStage, sceneMap, msg.getIsRed(), id);
+						    Scene gameScene = boardScreen.createGuiBoard();
+						    sceneMap.put("board", gameScene);
+						    primaryStage.setScene(gameScene);
 						} else if (msg.getType2() == Message.messageType.game_move) {
-							
+							if (boardScreen != null) {
+								boardScreen.Move(msg.getFromRow(), msg.getToRow(), msg.getFromCol(), msg.getToCol());
+							}
+						} else if (msg.getType2() == Message.messageType.game_win) {
+							boardScreen.showEndGameDialog("You Win!");
+						} else if (msg.getType2() == Message.messageType.game_lose) {
+							boardScreen.showEndGameDialog("You Lose:(");
+						} else if (msg.getType2() == Message.messageType.forfeit) {
+							boardScreen.showEndGameDialog("Opponent forefeited you win!");
 						}
 					} else if (msg.getType() == Message.messageType.new_users) {
-						observer.clear();
-						observer.add("All");
-						observer.addAll(msg.getUsernames());
-						options.setValue("All");
+						if (boardScreen != null) {
+							boardScreen.observer.clear();
+							boardScreen.observer.add("All");
+							boardScreen.observer.addAll(msg.getUsernames());
+							boardScreen.options.setValue("All");
+						}
 					} else {
-						listItems2.getItems().add(msg.getMessage());
+						if (boardScreen != null) {
+							boardScreen.chat.getItems().add(msg.getMessage());
+						}
 					}
 			});
 		});
 							
 		clientConnection.start();
 		
-		options = new ComboBox<String>(observer);
-		options.setValue("All");
-		c1 = new TextField();
-		b1 = new Button("Send");
-		
-		b1.setOnAction(e->{
-			if (options.getValue().isEmpty() || options.getValue().equals("All")) {
-				Message send = new Message(Message.messageType.group_message, id);
-				send.setMessage(c1.getText());
-				send.setReceiver("All");
-				clientConnection.send(send); 
-				c1.clear();
-			} else {
-				Message send = new Message(Message.messageType.direct_message, id);
-				send.setMessage(c1.getText());
-				send.setReceiver(options.getValue());
-				clientConnection.send(send);
-				c1.clear();
-			}
-			
-			});
 		
 		sceneMap = new HashMap<String, Scene>();
 		
 		startScreen = new GuiStart(primaryStage, sceneMap);
 		loginScreen = new GuiLogin(clientConnection, primaryStage, sceneMap, id);
 		signupScreen= new GuiSignUp(clientConnection, primaryStage, sceneMap, id);
-		boardScreen = new GuiBoard(clientConnection, false);
+		mainScreen = new GuiMainScreen(clientConnection, primaryStage, sceneMap, username, id);
 		
 		sceneMap.put("start", startScreen.createGuiStart());
 		sceneMap.put("login", loginScreen.createGuiLogin());
 		sceneMap.put("signup", signupScreen.createGuiSignup());
-		sceneMap.put("board", boardScreen.createGuiBoard());
-		sceneMap.put("main",  createClientGui());
+		sceneMap.put("main",  mainScreen.createGuiMainScreen());
 		
 		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override
@@ -144,14 +128,6 @@ public class GuiClient extends Application{
 		primaryStage.setScene(sceneMap.get("start"));
 		primaryStage.setTitle("Start");
 		primaryStage.show();
-		
-	}
-	
-	public Scene createClientGui() {
-		
-		clientBox = new VBox(10, options, c1, b1, listItems2);
-		clientBox.setStyle("-fx-background-color: blue;"+"-fx-font-family: 'serif';");
-		return new Scene(clientBox, 400, 300);
 		
 	}
 

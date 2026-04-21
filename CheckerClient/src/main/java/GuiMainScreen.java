@@ -6,7 +6,9 @@ import javafx.stage.Stage;
 import java.util.HashMap;
 
 public class GuiMainScreen {
-
+	
+	int id;
+	String username;
     Button startGameBtn;
     Button SoloBtn;
     Button backBtn;
@@ -15,10 +17,12 @@ public class GuiMainScreen {
     HashMap<String, Scene> sceneMap;
     Client clientConnection;
 
-    public GuiMainScreen(Client connection, Stage primaryStage, HashMap<String, Scene> sceneMap) {
+    public GuiMainScreen(Client connection, Stage primaryStage, HashMap<String, Scene> sceneMap, String username, int id) {
         this.clientConnection = connection;
         this.primaryStage = primaryStage;
         this.sceneMap = sceneMap;
+        this.username = username;
+        this.id = id;
     }
 
     public Scene createGuiMainScreen() {
@@ -27,7 +31,10 @@ public class GuiMainScreen {
         backBtn = new Button("Back to Start");
 
         startGameBtn.setOnAction(e -> {
-            primaryStage.setScene(sceneMap.get("board"));
+        	Message msg = new Message(Message.messageType.game_start, id);
+        	msg.setSender(username);
+        	startGameBtn.setText("...");
+            clientConnection.send(msg);
         });
 
         SoloBtn.setOnAction(e -> {
@@ -38,7 +45,7 @@ public class GuiMainScreen {
             primaryStage.setScene(sceneMap.get("start"));
         });
 
-        menuBox = new VBox(20, startGameBtn, SoloBtn, backBtn);
+        menuBox = new VBox(20, startGameBtn, backBtn);
         menuBox.setAlignment(Pos.CENTER);
 
         menuBox.setStyle("-fx-background-color: blue; -fx-font-family: 'serif';");

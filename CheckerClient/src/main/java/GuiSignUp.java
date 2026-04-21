@@ -53,8 +53,7 @@ public class GuiSignUp{
 			username = user.getText();
 			password = passwordField.getText();
 			
-			if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
-				if (password.length() >= 6 && password.length() <= 12 && password.equals(password_again.getText())) {
+			if (password.length() >= 6 && password.length() <= 12 && password.equals(password_again.getText())) {
 					user.clear();
 					passwordField.clear();
 					password_again.clear();
@@ -62,14 +61,24 @@ public class GuiSignUp{
 					sendName.setMessage(username);
 					sendName.setMessage2(password);
 					clientConnection.send(sendName);
-				}
+			} else {
+				username = "";
+				password = "";
+				user.clear();
+				passwordField.clear();
+				password_again.clear();
+				error.setText("Invalid Username or password please try again");
 			}
 		});
 		
-		passwordField.setStyle("-fx-text-fill: white");
-		password_again.setStyle("-fx-text-fill: white");
+		user.setPromptText("Enter username");
+		passwordField.setPromptText("Enter password");
+		password_again.setPromptText("Re-enter password");
+		
+		//passwordField.setStyle("-fx-text-fill: white");
+		//password_again.setStyle("-fx-text-fill: white");
 		loginBox.setAlignment(Pos.TOP_CENTER);
-		loginBox.setStyle("-fx-background-color: blue" + "-fx-font-family: 'serif';");
+		loginBox.setStyle("-fx-background-color: blue;"+"-fx-font-family: 'serif';");
 		return new Scene(loginBox, 400, 300);
 	}
 	

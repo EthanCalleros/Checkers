@@ -26,6 +26,9 @@ public class Message implements Serializable {
     	board,
     	game_move,
     	game_start,
+    	game_win,
+    	game_lose,
+    	forfeit,
     	new_users
     }
     
@@ -36,6 +39,7 @@ public class Message implements Serializable {
     private String receiver;
     private String message, message2;
     private ArrayList<String> usernames;
+    private boolean isRed;
     
     private int fromRow, fromCol, toRow, toCol;
     
@@ -72,6 +76,9 @@ public class Message implements Serializable {
     	this.toRow = toRow;
     	this.toCol = toCol;
     }
+    public void setIsRed(boolean isRed) {
+    	this.isRed = isRed;
+    }
     public messageType getType() {
     	return this.type;
     }
@@ -107,5 +114,8 @@ public class Message implements Serializable {
     }
     public int getToCol() {
     	return this.toCol;
+    }
+    public boolean getIsRed() {
+    	return this.isRed;
     }
 }

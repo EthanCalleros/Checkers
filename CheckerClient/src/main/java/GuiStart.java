@@ -22,6 +22,8 @@ public class GuiStart{
 	public Scene createGuiStart() {
 		login = new Button("Login");
 		signUp = new Button("Sign Up");
+		login.setPrefWidth(100);
+		signUp.setPrefWidth(100);
 		login.setOnAction(e->{
 			primaryStage.setScene(sceneMap.get("login"));
 		});
@@ -29,8 +31,8 @@ public class GuiStart{
 			primaryStage.setScene(sceneMap.get("signup"));
 		});
 		options = new VBox(10, login, signUp);
-		options.setAlignment(Pos.TOP_CENTER);
+		options.setAlignment(Pos.CENTER);
 		options.setStyle("-fx-background-color: blue;"+"-fx-font-family: 'serif';");
-		return new Scene(options, 400, 300);
+		return new Scene(options, 500, 400);
 	}
 }

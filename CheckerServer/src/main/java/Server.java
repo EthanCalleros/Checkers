@@ -17,6 +17,7 @@ public class Server{
 
 	int count = 1;	
 	ArrayList<ClientThread> clients = new ArrayList<ClientThread>();
+	ClientThread waitingPlayer = null;
 	TheServer server;
 	private Consumer<Serializable> callback;
 	
@@ -74,11 +75,13 @@ public class Server{
 			String username;
 			ObjectInputStream in;
 			ObjectOutputStream out;
+			ClientThread opp;
 			
 			ClientThread(Socket s, int count){
 				this.connection = s;
 				this.count = count;	
 			}
+			
 			
 			public void run(){
 					
@@ -117,7 +120,7 @@ public class Server{
 					    			callback.accept("client #" + count + " User Does Not Exist");
 					    		} else if (accounts.containsKey(user) && accounts.get(user).equals(password)) {
 					    		    username = user;
-					    		    Message success = new Message(Message.messageType.correct_password, count);
+					    		    Message success = new Message(Message.messageType.correct_password, Message.messageType.user_exists, count);
 					    		    out.writeObject(success);
 					    		    out.reset();
 					    		    callback.accept("client #" + count + " logged in as " + username);
@@ -127,7 +130,7 @@ public class Server{
 					    		String user = msg.getMessage();
 					    		String password = msg.getMessage2();
 					    		
-					    		String specialChars = "[!@#$%^&*()_+-=[]{}|;:',.<>/?]";
+					    		String specialChars = "[!@#$%^&*()_+\\-=\\[\\]{};':\",.<>/?]";
 					    		String nums = "[0-9]";
 					    		
 					    		if (!password.matches(".*" + specialChars + ".*") || !password.matches(".*" + nums + ".*")){
@@ -150,16 +153,68 @@ public class Server{
 					    			callback.accept("client # " + count + " User Already Exists: " + user);
 					    		}
 					    	} else if (msg.getType() == Message.messageType.game_start) {
-					    		
+					    		if (waitingPlayer == null) {
+					    			waitingPlayer = this;
+					    			callback.accept(username + " is waiting for an opponent...");
+					    		} else {
+					    			ClientThread oppThread = waitingPlayer;
+					    			waitingPlayer = null;
+					    			
+					    			this.opp = oppThread;
+					    			oppThread.opp = this;
+					    			
+					    			try {
+					    				Message thisMsg = new Message(Message.messageType.board, Message.messageType.game_start, count);
+					    				Message oppMsg = new Message(Message.messageType.board, Message.messageType.game_start, oppThread.count);
+					    				
+					    				thisMsg.setIsRed(true);
+					    				oppMsg.setIsRed(false);
+					    				
+					                    this.out.writeObject(thisMsg); 
+					                    this.out.reset();
+
+					                    oppThread.out.writeObject(oppMsg);
+					                    oppThread.out.reset();
+
+					                    callback.accept("Matched: " + this.username + " vs " + oppThread.username);
+					                } catch (Exception e) {
+					                    callback.accept("Error starting game between " + username + " and opponent");
+					                }
+					    		}
 					    	} else if (msg.getType() == Message.messageType.game_move) {
-					    		int fromRow, toRow, fromCol, toCol;
-					    		
-					    		fromRow = msg.getFromRow();
-					    		toRow = msg.getToRow();
-					    		fromCol = msg.getFromCol();
-					    		toCol = msg.getToCol();
-					    		
-					    		
+					    		if (this.opp != null) {
+					    	        try {
+					    	        	Message moveMsg = new Message(Message.messageType.board, Message.messageType.game_move, count);
+					    	        	moveMsg.setMove(msg.getFromRow(), msg.getFromCol(), msg.getToRow(), msg.getToCol());
+					    	            this.opp.out.writeObject(moveMsg);
+					    	            this.opp.out.reset();
+					    	            
+					    	            callback.accept("Move relayed: " + username + " -> " + opp.username + 
+					    	                            " [" + msg.getFromRow() + "," + msg.getFromCol() + "] to " +
+					    	                            "[" + msg.getToRow() + "," + msg.getToCol() + "]");
+					    	        } catch (Exception e) {
+					    	            callback.accept("Failed to relay move from " + username + ". Opponent may have disconnected.");
+					    	        }
+					    	    } else {
+					    	        callback.accept("Error: " + username + " tried to move but has no opponent!");
+					    	    }
+					    	} else if (msg.getType() == Message.messageType.game_win) {
+					    		Message winMsg = new Message(Message.messageType.board, Message.messageType.game_win, count);
+					    		out.writeObject(winMsg);
+					    	} else if (msg.getType() == Message.messageType.game_lose) {
+					    		Message loseMsg = new Message(Message.messageType.board, Message.messageType.game_lose, count);
+					    		out.writeObject(loseMsg);
+					    	} else if (msg.getType() == Message.messageType.forfeit) {
+					    		for (ClientThread cl : clients) {
+					    	        if (!cl.username.equals(username)) {
+					    	            try {
+					    	                Message winMsg = new Message(Message.messageType.board, Message.messageType.forfeit, count);
+					    	                winMsg.setMessage(username + " forfeited. You win!");
+					    	                cl.out.writeObject(winMsg);
+					    	                cl.out.reset();
+					    	            } catch (Exception e) {}
+					    	        }
+					    	    }
 					    	} else if (msg.getType() == Message.messageType.group_message) {
 					    		callback.accept(username + " to All: " + msg.getMessage());
 		                        for (ClientThread cl : clients) {

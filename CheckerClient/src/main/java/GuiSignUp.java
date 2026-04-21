@@ -1,4 +1,76 @@
+import java.util.HashMap;
 
-public class GuiSignUp {
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
+public class GuiSignUp{
+	
+	String username;
+	String password;
+	int id;
+	TextField user;
+	TextField passwordField;
+	TextField password_again;
+	Label rules;
+	Label error;
+	Button enter;
+	VBox loginBox;
+	Client clientConnection;
+	Stage primaryStage;
+	HashMap<String, Scene> sceneMap;
+	
+	public GuiSignUp(Client connection, Stage primaryStage, HashMap<String, Scene> sceneMap, int id) {
+		this.clientConnection = connection;
+		this.primaryStage = primaryStage;
+		this.sceneMap = sceneMap;
+		this.id = id;
+	}
+	
+	public Scene createGuiSignup() {
+		enter = new Button("Create");
+		passwordField = new TextField();
+		password_again = new TextField();
+		user = new TextField();
+		rules = new Label("Password must be 6-12 characters, contain at least 1 special character, contain at least 1 number");
+		error = new Label();
+		loginBox = new VBox(10, user, passwordField, password_again, enter, error);
+		
+		enter.setOnAction(e->{
+			username = user.getText();
+			password = passwordField.getText();
+			
+			if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+				if (password.length() >= 6 && password.length() <= 12 && password.equals(password_again.getText())) {
+					user.clear();
+					passwordField.clear();
+					password_again.clear();
+					Message sendName = new Message(Message.messageType.signup, id);
+					sendName.setMessage(username);
+					sendName.setMessage2(password);
+					clientConnection.send(sendName);
+				}
+			}
+		});
+		
+		passwordField.setStyle("-fx-text-fill: white");
+		password_again.setStyle("-fx-text-fill: white");
+		loginBox.setAlignment(Pos.TOP_CENTER);
+		loginBox.setStyle("-fx-background-color: blue" + "-fx-font-family: 'serif';");
+		return new Scene(loginBox, 400, 300);
+	}
+	
 }
